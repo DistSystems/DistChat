@@ -98,33 +98,34 @@ class ChatServer(Thread):
                     # Give the connection a queue for data we want to send
                     self.message_queues[connection] = Queue()
 
-                elif len(in_socket) > 0:
+                else:
                     data = in_socket.recv(1024)
-                    if data and data.lower() != 'exit':
-                        # A readable client socket has data
-                        data = json.loads(data.decode())
-                        message = '({}) : {}'.format(data['user'], data['message'])
-                        self.messages.append(message)
-                        clear_terminal()
+                    if len(data) > 0:
+                        if data.lower() != 'exit':
+                            # A readable client socket has data
+                            data = json.loads(data.decode())
+                            message = '({}) : {}'.format(data['user'], data['message'])
+                            self.messages.append(message)
+                            clear_terminal()
 
-                        print('\n' * (self.buffer_height - len(self.messages)-2))
+                            print('\n' * (self.buffer_height - len(self.messages)-2))
 
-                        for message in self.messages:
-                            print(message)
+                            for message in self.messages:
+                                print(message)
 
-                        print(BLUE + '='*self.buffer_width + ENDC)
+                            print(BLUE + '='*self.buffer_width + ENDC)
 
-                    else:
-                        # Exiting
-                        print('closing {}'.format(in_socket.getpeername()))
-                        # Stop listening for input on the connection
-                        if in_socket in outputs:
-                            outputs.remove(in_socket)
-                        inputs.remove(in_socket)
-                        in_socket.close()
+                        else:
+                            # Exiting
+                            print('closing {}'.format(in_socket.getpeername()))
+                            # Stop listening for input on the connection
+                            if in_socket in outputs:
+                                outputs.remove(in_socket)
+                            inputs.remove(in_socket)
+                            in_socket.close()
 
-                        # Remove message queue
-                        del self.message_queues[in_socket]
+                            # Remove message queue
+                            del self.message_queues[in_socket]
 
     def kill(self):
         self.running = False
