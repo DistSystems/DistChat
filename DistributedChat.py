@@ -98,7 +98,7 @@ class ChatServer(Thread):
                     # Give the connection a queue for data we want to send
                     self.message_queues[connection] = Queue()
 
-                else:
+                elif len(in_socket) > 0:
                     data = in_socket.recv(1024)
                     if data and data.lower() != 'exit':
                         # A readable client socket has data
@@ -115,8 +115,8 @@ class ChatServer(Thread):
                         print(BLUE + '='*self.buffer_width + ENDC)
 
                     else:
-                        # Interpret empty result as closed connection
-                        print('closing {} after reading no data'.format(in_socket.getpeername()))
+                        # Exiting
+                        print('closing {}'.format(in_socket.getpeername()))
                         # Stop listening for input on the connection
                         if in_socket in outputs:
                             outputs.remove(in_socket)
