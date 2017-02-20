@@ -64,6 +64,25 @@ class ChatServer(Thread):
         while self.running:
             # Wait for at least one of the sockets to be ready for processing
             readable, writable, exceptional = select(inputs, outputs, inputs)
+
+            # Handle "exceptional conditions"
+            for s in exceptional:
+                print('Something went wrong with {}'.format(s.getpeername()))
+                # Stop listening for input on the connection
+                inputs.remove(s)
+                if s in outputs:
+                    outputs.remove(s)
+                s.close()
+
+                # Remove message queue
+                del self.message_queues[s]
+
+            # Handle outputs
+            for out_socket in writable:
+                # Handle output here
+                if not self.message_queues[out_socket].empty():
+                    out_socket.send(self.message_queues[out_socket].get())
+
             for in_socket in readable:
                 if in_socket is server:
                     # A "readable" server socket is ready to accept a connection
@@ -106,24 +125,6 @@ class ChatServer(Thread):
 
                         # Remove message queue
                         del self.message_queues[in_socket]
-
-            # Handle outputs
-            for out_socket in writable:
-                # Handle output here
-                if not self.message_queues[out_socket].empty():
-                    out_socket.send(self.message_queues[out_socket].get())
-
-            # Handle "exceptional conditions"
-            for s in exceptional:
-                print('Something went wrong with {}'.format(s.getpeername()))
-                # Stop listening for input on the connection
-                inputs.remove(s)
-                if s in outputs:
-                    outputs.remove(s)
-                s.close()
-
-                # Remove message queue
-                del self.message_queues[s]
 
     def kill(self):
         self.running = False
