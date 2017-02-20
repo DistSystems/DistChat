@@ -43,9 +43,11 @@ class ChatServer(Thread):
         self.port = port
         self.clients = {}  # Dict of connections, IP's act as keys
         self.messages = []
-        self.message_len = 0
         self.buffer_height = shutil.get_terminal_size()[1]
         self.buffer_width = shutil.get_terminal_size()[0]
+
+        # Outgoing message queues (socket:Queue)
+        self.message_queues = {}
 
     def run(self):
         """
@@ -58,9 +60,6 @@ class ChatServer(Thread):
 
         inputs = [server]
         outputs = []
-
-        # Outgoing message queues (socket:Queue)
-        message_queues = {}
 
         while self.running:
             # Wait for at least one of the sockets to be ready for processing
@@ -75,9 +74,10 @@ class ChatServer(Thread):
 
                     connection.setblocking(0)
                     inputs.append(connection)
+                    outputs.append(connection)
 
                     # Give the connection a queue for data we want to send
-                    message_queues[connection] = Queue()
+                    self.message_queues[connection] = Queue()
 
                 else:
                     data = in_socket.recv(1024)
@@ -95,10 +95,6 @@ class ChatServer(Thread):
 
                         print(BLUE + '='*self.buffer_width + ENDC)
 
-                        # Add output channel for response
-                        if in_socket not in outputs:
-                            outputs.append(in_socket)
-
                     else:
                         # Interpret empty result as closed connection
                         print('closing {} after reading no data'.format(in_socket.getpeername()))
@@ -109,12 +105,13 @@ class ChatServer(Thread):
                         in_socket.close()
 
                         # Remove message queue
-                        del message_queues[in_socket]
+                        del self.message_queues[in_socket]
 
             # Handle outputs
             for out_socket in writable:
                 # Handle output here
-                pass
+                if not self.message_queues[out_socket].empty():
+                    out_socket.send(self.message_queues[out_socket].get())
 
             # Handle "exceptional conditions"
             for s in exceptional:
@@ -126,7 +123,7 @@ class ChatServer(Thread):
                 s.close()
 
                 # Remove message queue
-                del message_queues[s]
+                del self.message_queues[s]
 
     def kill(self):
         self.running = False
@@ -158,10 +155,14 @@ class ChatClient(Cmd):
     def do_connect(self, string):
         """
         """
-        def connect(self, host, port, server):
-            """
-            """
-        pass
+        values = string.split(":", 1)
+        self.connect(values[0], int(values[1]), self.server)
+
+    def connect(self, host, port, server):
+        """
+        """
+        connect_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        connect_sock.connect((host, port))
 
     def do_c(self, string):
         self.do_connect(string)
@@ -189,7 +190,10 @@ class ChatClient(Cmd):
             self.do_exit('EOF')
 
         data = json.dumps({'user': self.user, 'message' : string})
-        self.sock.send(data.encode())
+        mess = data.encode()
+        for outs in self.server.message_queues:
+            outs.put(mess)
+        self.sock.send(mess)
         time.sleep(.1)
 
     def do_exit(self, string):
