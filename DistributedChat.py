@@ -193,8 +193,8 @@ class ChatClient(Cmd):
 
         data = json.dumps({'user': self.user, 'message' : string})
         mess = data.encode()
-        for outs in self.server.message_queues:
-            outs.put(mess)
+        for outs in self.server.message_queues.keys():
+            self.server.message_queues[outs].put(mess)
         self.sock.send(mess)
         time.sleep(.1)
 
