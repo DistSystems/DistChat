@@ -151,9 +151,6 @@ class ChatClient(Cmd):
 
         self.buffer_height = shutil.get_terminal_size()[1]
 
-
-        self.connect_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
         clear_terminal()
         print('\n'*self.buffer_height)
 
@@ -161,12 +158,16 @@ class ChatClient(Cmd):
         """
         """
         values = string.split(":", 1)
-        self.connect(values[0], int(values[1]), self.server)
+        connect(values[0], int(values[1]), self.server)
 
     def connect(self, host, port, server):
         """
         """
-        self.connect_sock.connect((host, port))
+        connect_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        connect_sock.connect((host, port))
+        connect_sock.setblocking(0)
+        server.inputs.append(connect_sock)
+        server.outputs.append(connect_sock)
 
     def do_c(self, string):
         self.do_connect(string)
