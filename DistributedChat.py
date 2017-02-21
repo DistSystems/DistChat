@@ -136,6 +136,8 @@ class ChatServer(Thread):
         connect_sock.setblocking(0)
         self.inputs.append(connect_sock)
         self.outputs.append(connect_sock)
+        # Give the connection a queue for data we want to send
+        self.message_queues[connect_sock] = Queue()
 
     def output_message(self, mess):
         for outs in self.message_queues.values():
