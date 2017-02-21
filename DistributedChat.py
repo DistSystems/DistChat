@@ -138,8 +138,8 @@ class ChatServer(Thread):
         self.outputs.append(connect_sock)
 
     def output_message(self, mess):
-        for outs in self.message_queues.keys():
-            self.message_queues[outs].put(mess)
+        for outs in self.message_queues.values():
+            outs.put(mess)
 
     def kill(self):
         self.running = False
