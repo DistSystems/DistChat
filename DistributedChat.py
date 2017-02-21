@@ -158,7 +158,7 @@ class ChatClient(Cmd):
         """
         """
         values = string.split(":", 1)
-        connect(values[0], int(values[1]), self.server)
+        self.connect(values[0], int(values[1]), self.server)
 
     def connect(self, host, port, server):
         """
