@@ -103,7 +103,6 @@ class ChatServer(Thread):
                             self.remove_connection(in_socket)
         # Cleanup Code
         self.close_all()
-        self.server.shutdown(2)
         self.server.close()
 
     def refresh_messages(self):
