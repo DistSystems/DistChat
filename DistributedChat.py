@@ -95,10 +95,10 @@ class ChatServer(Thread):
                             message = '({}) : {}'.format(data['user'], data['message'])
                             self.messages.append(message)
                             self.refresh_messages()
-
                         else:
                             # Exiting
-                            print('{} left the chat'.format(in_socket.getpeername()))
+                            self.messages.append('{} left the chat'.format(in_socket.getpeername()))
+                            self.refresh_messages()
                             # Stop listening for input on the connection
                             self.remove_connection(in_socket)
         # Cleanup Code
