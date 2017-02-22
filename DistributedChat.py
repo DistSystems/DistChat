@@ -97,7 +97,7 @@ class ChatServer(Thread):
                             self.refresh_messages()
                         else:
                             # Exiting
-                            self.messages.append('{} left the chat'.format(in_socket.getpeername()))
+                            self.messages.append('{} ({}) left the chat'.format(data['user'], in_socket.getpeername()))
                             self.refresh_messages()
                             # Stop listening for input on the connection
                             self.remove_connection(in_socket)
@@ -137,7 +137,7 @@ class ChatServer(Thread):
         sock.close()
 
     def close_all(self):
-        for conn in self.outputs:
+        for conn in self.outputs[:]:
             self.remove_connection(conn)
 
     def output_message(self, mess):
@@ -175,6 +175,8 @@ class ChatClient(Cmd):
     def do_connect(self, string):
         """
         """
+        self.server.close_all()
+
         values = string.split(":", 1)
         self.server.connect_to(values[0], int(values[1]))
 
