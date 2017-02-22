@@ -134,7 +134,6 @@ class ChatServer(Thread):
         self.inputs.remove(sock)
         del self.message_queues[sock]
         del self.clients[sock]
-        sock.shutdown(2)
         sock.close()
 
     def close_all(self):
