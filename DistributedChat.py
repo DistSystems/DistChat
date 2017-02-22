@@ -101,6 +101,9 @@ class ChatServer(Thread):
                             print('closing {}'.format(in_socket.getpeername()))
                             # Stop listening for input on the connection
                             self.remove_connection(in_socket)
+        # Cleanup Code
+        self.close_all()
+        self.server.close()
 
     def refresh_messages(self):
         clear_terminal()
@@ -143,8 +146,6 @@ class ChatServer(Thread):
 
     def kill(self):
         self.running = False
-        self.close_all()
-        self.server.close()
 
 
 
