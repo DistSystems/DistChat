@@ -41,7 +41,7 @@ class ChatServer(Thread):
         Thread.__init__(self)
         self.running = True
         self.port = port
-        self.clients = {}  # Dict of connections, IP's act as keys
+        self.clients = {}  # Dict of connections, sockets act as keys
         self.messages = []
         self.buffer_height = shutil.get_terminal_size()[1]
         self.buffer_width = shutil.get_terminal_size()[0]
@@ -92,14 +92,10 @@ class ChatServer(Thread):
                     connection, client_address = in_socket.accept()
 
                     if client_address[0] != '127.0.0.1':
-                        print('New connection from {}'.format(client_address))
+                        self.messages.append('New connection from {}'.format(client_address))
+                        self.refresh_messages()
 
-                    connection.setblocking(0)
-                    self.inputs.append(connection)
-                    self.outputs.append(connection)
-
-                    # Give the connection a queue for data we want to send
-                    self.message_queues[connection] = Queue()
+                    self.add_connection(connection)
 
                 else:
                     data = in_socket.recv(1024)
@@ -109,14 +105,7 @@ class ChatServer(Thread):
                             data = json.loads(data.decode())
                             message = '({}) : {}'.format(data['user'], data['message'])
                             self.messages.append(message)
-                            clear_terminal()
-
-                            print('\n' * (self.buffer_height - len(self.messages)-2))
-
-                            for message in self.messages:
-                                print(message)
-
-                            print(BLUE + '='*self.buffer_width + ENDC)
+                            self.refresh_messages()
 
                         else:
                             # Exiting
@@ -130,14 +119,29 @@ class ChatServer(Thread):
                             # Remove message queue
                             del self.message_queues[in_socket]
 
+    def refresh_messages(self):
+        clear_terminal()
+
+        print('\n' * (self.buffer_height - len(self.messages) - 2))
+
+        for message in self.messages:
+            print(message)
+
+        print(BLUE + '=' * self.buffer_width + ENDC)
+
     def connect_to(self, host, port):
         connect_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         connect_sock.connect((host, port))
-        connect_sock.setblocking(0)
-        self.inputs.append(connect_sock)
-        self.outputs.append(connect_sock)
+        self.add_connection(connect_sock)
+
+    def add_connection(self, sock):
+        sock.setblocking(0)
+        self.inputs.append(sock)
+        self.outputs.append(sock)
         # Give the connection a queue for data we want to send
-        self.message_queues[connect_sock] = Queue()
+        self.message_queues[sock] = Queue()
+        # And store its info in our clients structure
+        self.clients[sock] = sock.getpeername()
 
     def output_message(self, mess):
         for outs in self.message_queues.values():
