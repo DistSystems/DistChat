@@ -214,7 +214,7 @@ class ChatClient(Cmd):
         data = json.dumps({'user': self.user, 'message': string})
         mess = data.encode()
         self.server.output_message(mess)
-        data = json.dumps({'user': self.user, 'message': exit})
+        data = json.dumps({'user': self.user, 'message': 'exit'})
         mess = data.encode()
         self.server.output_message(mess)
         print('Exiting the room...', ENDC)
