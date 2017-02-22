@@ -211,10 +211,12 @@ class ChatClient(Cmd):
         time.sleep(.1)
 
     def do_exit(self, string):
-        if not string:
-            pass  # shut pep8 warnings
-
-        self.server.output_message('exit')
+        data = json.dumps({'user': self.user, 'message': string})
+        mess = data.encode()
+        self.server.output_message(mess)
+        data = json.dumps({'user': self.user, 'message': exit})
+        mess = data.encode()
+        self.server.output_message(mess)
         print('Exiting the room...', ENDC)
         time.sleep(.1)
         self.server.kill()
