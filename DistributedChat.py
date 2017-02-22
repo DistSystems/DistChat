@@ -90,22 +90,39 @@ class ChatServer(Thread):
                     data = in_socket.recv(1024)
                     if len(data) > 0:
                         data = json.loads(data.decode())
-                        if data['message'] != 'exit':
+                        if 'clients' in data:
+                            # We're recieving a list of clients here
+                            # Get the list of host/port tuples
+                            client_list = data['clients']
+                            # And connect to each one
+                            for host, port in client_list:
+                                self.connect_to(host, port)
+                        elif data['message'] == '\exit':
+                            # They are leaving the chat, close our end of the connection
+                            self.messages.append('{} ({}) left the chat'.format(data['user'], in_socket.getpeername()))
+                            self.refresh_messages()
+                            # Stop listening for input on that connection
+                            self.remove_connection(in_socket)
+                        elif data['message'] == '\clients':
+                            # A request for a client list
+                            client_dict = {'clients': []}
+                            client_dict['clients'].extend(self.clients.values())
+                            data = json.dumps(client_dict)
+                            mess = data.encode()
+                            self.send_message(mess, in_socket)
+                        else:
                             # A readable client socket has data
                             message = '({}) : {}'.format(data['user'], data['message'])
                             self.messages.append(message)
                             self.refresh_messages()
-                        else:
-                            # Exiting
-                            self.messages.append('{} ({}) left the chat'.format(data['user'], in_socket.getpeername()))
-                            self.refresh_messages()
-                            # Stop listening for input on the connection
-                            self.remove_connection(in_socket)
         # Cleanup Code
         self.close_all()
         self.server.close()
 
     def refresh_messages(self):
+        """
+        Refreshes the terminal complete with messages
+        """
         clear_terminal()
 
         print('\n' * (self.buffer_height - len(self.messages) - 2))
@@ -116,11 +133,17 @@ class ChatServer(Thread):
         print(BLUE + '=' * self.buffer_width + ENDC)
 
     def connect_to(self, host, port):
+        """
+        Connect to the specified host port combination
+        """
         connect_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         connect_sock.connect((host, port))
         self.add_connection(connect_sock)
 
     def add_connection(self, sock):
+        """
+        Handles the backend tracking of connections
+        """
         sock.setblocking(0)
         self.inputs.append(sock)
         self.outputs.append(sock)
@@ -130,6 +153,9 @@ class ChatServer(Thread):
         self.clients[sock] = sock.getpeername()
 
     def remove_connection(self, sock):
+        """
+        Handles the backend tracking of connection removal
+        """
         self.outputs.remove(sock)
         self.inputs.remove(sock)
         del self.message_queues[sock]
@@ -137,16 +163,27 @@ class ChatServer(Thread):
         sock.close()
 
     def close_all(self):
+        """
+        Removes all active connections except for the one with itself
+        """
         for conn in self.outputs[:]:
             self.remove_connection(conn)
 
     def output_message(self, mess):
+        """
+        Outputs a message to all active outgoing connections
+        """
         for outs in self.message_queues.values():
             outs.put(mess)
 
+    def send_message(self, mess, sock):
+        """
+        Outputs a message to a single connection
+        """
+        self.message_queues[sock].put(mess)
+
     def kill(self):
         self.running = False
-
 
 
 class ChatClient(Cmd):
@@ -173,12 +210,15 @@ class ChatClient(Cmd):
         print('\n' * self.buffer_height)
 
     def do_connect(self, string):
-        """
-        """
+        # Remove all of our old connections
         self.server.close_all()
-
+        # Then connect to the new server
         values = string.split(":", 1)
         self.server.connect_to(values[0], int(values[1]))
+        # And immediately request a copy of their clients
+        data = json.dumps({'user': self.user, 'message': '\clients'})
+        mess = data.encode()
+        self.server.output_message(mess)
 
     def do_c(self, string):
         self.do_connect(string)
@@ -191,7 +231,6 @@ class ChatClient(Cmd):
     def onecmd(self, string):
         """
         Runs whenever a new text is entered and not covered by do_<something>
-
         """
         if not string:
             return
@@ -215,7 +254,7 @@ class ChatClient(Cmd):
         data = json.dumps({'user': self.user, 'message': string})
         mess = data.encode()
         self.server.output_message(mess)
-        data = json.dumps({'user': self.user, 'message': 'exit'})
+        data = json.dumps({'user': self.user, 'message': '\exit'})
         mess = data.encode()
         self.server.output_message(mess)
         print('Exiting the room...', ENDC)
@@ -251,6 +290,7 @@ def clear_terminal():
 
 def get_random_name():
     """
+    Gets a random name for a new user that didn't bother to choose one
     """
     names = [
         "PokemonLover96",
