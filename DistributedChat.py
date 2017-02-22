@@ -91,6 +91,7 @@ class ChatServer(Thread):
                     if len(data) > 0:
                         data = json.loads(data.decode())
                         if 'clients' in data:
+                            print(data)
                             # We're recieving a list of clients here
                             # Get the list of host/port tuples
                             client_list = data['clients']
@@ -187,14 +188,14 @@ class ChatServer(Thread):
 
 
 class ChatClient(Cmd):
-    def __init__(self, user_info=None, user='Anon', escape='\\', port=2017):
+    def __init__(self, user='Anon', escape='\\', port=2017):
         """
         """
         Cmd.__init__(self)
         self.user = user
         self.prompt = '({}) >> '.format(user)
         self.escape = escape
-        self.connected = False
+        self.port = port
 
         # start the local server
         self.server = ChatServer(port)
@@ -210,8 +211,13 @@ class ChatClient(Cmd):
         print('\n' * self.buffer_height)
 
     def do_connect(self, string):
-        # Remove all of our old connections
-        self.server.close_all()
+        # Kill the old chat server
+        self.server.kill()
+        time.sleep(.1)
+        # And then reboot it
+        self.server = ChatServer(self.port)
+        self.server.daemon = True
+        self.server.start()
         # Then connect to the new server
         values = string.split(":", 1)
         self.server.connect_to(values[0], int(values[1]))
@@ -223,10 +229,8 @@ class ChatClient(Cmd):
     def do_c(self, string):
         self.do_connect(string)
 
-    def do_update(self, string):
-        bs = '\b' * 1000
-        print(bs)
-        print(string)
+    def do_port(self, string):
+        self.port = int(string)
 
     def onecmd(self, string):
         """
