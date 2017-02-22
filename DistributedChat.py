@@ -91,7 +91,6 @@ class ChatServer(Thread):
                     if len(data) > 0:
                         data = json.loads(data.decode())
                         if 'clients' in data:
-                            print(data)
                             # We're recieving a list of clients here
                             # Get the list of host/port tuples
                             client_list = data['clients']
