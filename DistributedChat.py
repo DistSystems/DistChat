@@ -95,9 +95,11 @@ class ChatServer(Thread):
                             # We're recieving a list of clients here
                             # Get the list of host/port tuples
                             client_list = data['clients']
-                            # And connect to each one
+                            # And connect to each one except us
+                            ourhost, ourport = in_socket.getsockname()
                             for host, port in client_list:
-                                self.connect_to(host, port)
+                                if ourhost != host and ourport != port:
+                                    self.connect_to(host, port)
                         elif data['message'] == '\exit':
                             # They are leaving the chat, close our end of the connection
                             self.messages.append('{} ({}) left the chat'.format(data['user'], in_socket.getpeername()))
@@ -213,11 +215,14 @@ class ChatClient(Cmd):
     def do_connect(self, string):
         # Kill the old chat server
         self.server.kill()
+        self.sock.close()
         time.sleep(.1)
         # And then reboot it
         self.server = ChatServer(self.port)
         self.server.daemon = True
         self.server.start()
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect(('localhost', self.port))
         # Then connect to the new server
         values = string.split(":", 1)
         self.server.connect_to(values[0], int(values[1]))
