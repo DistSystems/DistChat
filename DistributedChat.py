@@ -103,6 +103,7 @@ class ChatServer(Thread):
                             self.remove_connection(in_socket)
         # Cleanup Code
         self.close_all()
+        self.server.shutdown(2)
         self.server.close()
 
     def refresh_messages(self):
@@ -134,6 +135,7 @@ class ChatServer(Thread):
         self.inputs.remove(sock)
         del self.message_queues[sock]
         del self.clients[sock]
+        sock.shutdown(2)
         sock.close()
 
     def close_all(self):
