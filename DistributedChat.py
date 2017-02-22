@@ -91,7 +91,6 @@ class ChatServer(Thread):
                     if len(data) > 0:
                         data = json.loads(data.decode())
                         if 'clients' in data:
-                            print(data)
                             # We're recieving a list of clients here
                             # Get the list of host/port tuples
                             client_list = data['clients']
@@ -102,7 +101,7 @@ class ChatServer(Thread):
                                     self.connect_to(host, port)
                         elif data['message'] == '\exit':
                             # They are leaving the chat, close our end of the connection
-                            self.messages.append('{} ({}) left the chat'.format(data['user'], in_socket.getpeername()))
+                            self.messages.append('({}) {} has left the chat'.format(data['user'], in_socket.getpeername()))
                             self.refresh_messages()
                             # Stop listening for input on that connection
                             self.remove_connection(in_socket)
