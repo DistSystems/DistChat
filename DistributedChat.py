@@ -13,7 +13,6 @@ from threading import Thread
 from select import select
 from queue import Queue
 
-
 """
 Collections of colors for printing, taken from Blender's
 build files
@@ -172,7 +171,7 @@ class ChatClient(Cmd):
         self.buffer_height = shutil.get_terminal_size()[1]
 
         clear_terminal()
-        print('\n'*self.buffer_height)
+        print('\n' * self.buffer_height)
 
     def do_connect(self, string):
         """
@@ -184,7 +183,7 @@ class ChatClient(Cmd):
         self.do_connect(string)
 
     def do_update(self, string):
-        bs = '\b'*1000
+        bs = '\b' * 1000
         print(bs)
         print(string)
 
@@ -205,7 +204,7 @@ class ChatClient(Cmd):
         elif string == 'EOF':
             self.do_exit('EOF')
 
-        data = json.dumps({'user': self.user, 'message' : string})
+        data = json.dumps({'user': self.user, 'message': string})
         mess = data.encode()
         self.server.output_message(mess)
         self.sock.send(mess)
@@ -223,10 +222,10 @@ class ChatClient(Cmd):
         print(GREEN, BOLD)
 
         help_messages = {
-            self.escape+'help': 'Print command details (duh)',
-            self.escape+'exit': 'Disconnect and exit the chat client',
-            self.escape+'connect -OR- '+self.escape+'c':
-                        'Connect to new user in "host:port" format (e.g. \c kelvin.net:2017)'
+            self.escape + 'help': 'Print command details (duh)',
+            self.escape + 'exit': 'Disconnect and exit the chat client',
+            self.escape + 'connect -OR- ' + self.escape + 'c':
+                'Connect to new user in "host:port" format (e.g. \c kelvin.net:2017)'
         }
 
         if not string:
@@ -260,6 +259,7 @@ def get_random_name():
     ]
 
     return random.choice(names)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
