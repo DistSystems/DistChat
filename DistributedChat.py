@@ -89,9 +89,9 @@ class ChatServer(Thread):
                 else:
                     data = in_socket.recv(1024)
                     if len(data) > 0:
-                        if data.lower() != 'exit':
+                        data = json.loads(data.decode())
+                        if data['message'] != 'exit':
                             # A readable client socket has data
-                            data = json.loads(data.decode())
                             message = '({}) : {}'.format(data['user'], data['message'])
                             self.messages.append(message)
                             self.refresh_messages()
