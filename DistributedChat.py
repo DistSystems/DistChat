@@ -98,7 +98,7 @@ class ChatServer(Thread):
 
                         else:
                             # Exiting
-                            print('closing {}'.format(in_socket.getpeername()))
+                            print('{} left the chat'.format(in_socket.getpeername()))
                             # Stop listening for input on the connection
                             self.remove_connection(in_socket)
         # Cleanup Code
@@ -214,7 +214,9 @@ class ChatClient(Cmd):
         if not string:
             pass  # shut pep8 warnings
 
+        self.server.output_message('exit')
         print('Exiting the room...', ENDC)
+        time.sleep(.1)
         self.server.kill()
         clear_terminal()
         exit()
