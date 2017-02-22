@@ -61,7 +61,6 @@ class ChatServer(Thread):
         server.listen(5)
 
         self.inputs = [server]
-        self.outputs = []
 
         while self.running:
             # Wait for at least one of the sockets to be ready for processing
@@ -71,13 +70,7 @@ class ChatServer(Thread):
             for s in exceptional:
                 print('Something went wrong with {}'.format(s.getpeername()))
                 # Stop listening for input on the connection
-                self.inputs.remove(s)
-                if s in self.outputs:
-                    self.outputs.remove(s)
-                s.close()
-
-                # Remove message queue
-                del self.message_queues[s]
+                self.remove_connection(s)
 
             # Handle outputs
             for out_socket in writable:
@@ -110,13 +103,7 @@ class ChatServer(Thread):
                             # Exiting
                             print('closing {}'.format(in_socket.getpeername()))
                             # Stop listening for input on the connection
-                            if in_socket in self.outputs:
-                                self.outputs.remove(in_socket)
-                            self.inputs.remove(in_socket)
-                            in_socket.close()
-
-                            # Remove message queue
-                            del self.message_queues[in_socket]
+                            self.remove_connection(in_socket)
 
     def refresh_messages(self):
         clear_terminal()
@@ -141,6 +128,13 @@ class ChatServer(Thread):
         self.message_queues[sock] = Queue()
         # And store its info in our clients structure
         self.clients[sock] = sock.getpeername()
+
+    def remove_connection(self, sock):
+        self.outputs.remove(sock)
+        self.inputs.remove(sock)
+        del self.message_queues[sock]
+        del self.clients[sock]
+        sock.close()
 
     def output_message(self, mess):
         for outs in self.message_queues.values():
