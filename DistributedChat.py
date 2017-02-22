@@ -47,20 +47,17 @@ class ChatServer(Thread):
 
         # Outgoing message queues (socket:Queue)
         self.message_queues = {}
-
-        self.inputs = []
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.inputs = [self.server]
         self.outputs = []
 
     def run(self):
         """
         """
         host = '0.0.0.0'  # Listen on all IP's
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        server.bind((host, self.port))
-        server.listen(5)
-
-        self.inputs = [server]
+        self.server.bind((host, self.port))
+        self.server.listen(5)
 
         while self.running:
             # Wait for at least one of the sockets to be ready for processing
@@ -79,7 +76,7 @@ class ChatServer(Thread):
                     out_socket.send(self.message_queues[out_socket].get())
 
             for in_socket in readable:
-                if in_socket is server:
+                if in_socket is self.server:
                     # A "readable" server socket is ready to accept a connection
                     connection, client_address = in_socket.accept()
 
@@ -136,12 +133,19 @@ class ChatServer(Thread):
         del self.clients[sock]
         sock.close()
 
+    def close_all(self):
+        for conn in self.outputs:
+            self.remove_connection(conn)
+
     def output_message(self, mess):
         for outs in self.message_queues.values():
             outs.put(mess)
 
     def kill(self):
         self.running = False
+        self.close_all()
+        self.server.close()
+
 
 
 class ChatClient(Cmd):
@@ -209,6 +213,7 @@ class ChatClient(Cmd):
             pass  # shut pep8 warnings
 
         print('Exiting the room...', ENDC)
+        self.server.kill()
         clear_terminal()
         exit()
 
